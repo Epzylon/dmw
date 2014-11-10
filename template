@@ -1,0 +1,136 @@
+###############################################################
+###############################################################
+################### TEMPLATE ##################################
+###############################################################
+###############################################################
+
+#Parameters variables
+NAME="uspls"
+DOMAIN="luxgroup.net"
+GATEWAY="10.75.64.1"
+IFTYPE="eth"
+ZONE="EST5EDT"
+MAIL="forwarder.hp.com"
+KDUMP_PARAM="128M"
+NTP_SERVERS="10.75.66.29 10.75.66.30"
+NTP_VERSION="3" #let blank to don't force
+DNS_SERVERS="10.75.66.29 10.75.66.30"
+SNMP_STRING="esdr7"
+
+###################### NETWORKS #############################
+#Interfaces IP and netmask
+
+
+#If you will not use bond interface change the name on INTERFACE variable
+# to eth0, eth1 or whatever
+#You can add many interfaces as you want
+
+#Array index always start from 1
+INTERFACE[1]="eth0"
+IP_INTERFACE[1]="10.0.1.15"
+NETMASK_INTERFACE[1]="255.255.255.0"
+HOST_SUFIX[1]=""
+INT_TYPE[1]="eth" #use "bond" for bond interfaces
+#Let in blank if the interfaces is not a bond
+BOND_SLAVES[1]=""
+
+
+INTERFACE[2]="bond0"
+IP_INTERFACE[2]="172.168.16.24"
+NETMASK_INTERFACE[2]="255.255.240.0"
+HOST_SUFIX[2]="-bur"
+INT_TYPE[2]="bond"
+BOND_SLAVES[2]="eth1 eth2"
+
+
+#Sample to cut and paste to add interfaces
+#INTERFACE[2]]="eth"
+#IP_INTERFACE[2]="172.168.17.35"
+#NETMASK_INTERFACE[2]="255.255.240.0"
+#HOST_SUFIX[x]="-mgmt"
+
+################## ROUTES ###################
+### Use iproute2 format #####################
+### like 192.168.0/24 #######################
+
+ROUTE_COMMENT[1]="" #optional
+ROUTE_DESTINATION[1]="" #host or network
+ROUTE_GW[1]="" #gw
+ROUTE_INT[1]="" #Don't forget specify this
+
+
+########################################
+HOSTS="
+
+"
+
+#- User
+SECUSER="secadmin"
+SECUSER_SHELL=/bin/bash
+SECUSER_GECOS=$SECUSER
+SECUSER_GROUP=security
+SECUSER_PASSWORD="Ch4ng3m3"
+SECUSER_CREATE_IF_NO_GROUP="yes"
+
+
+################### KERNEL PARAMETERS ##############
+KERNEL_PARAMS="
+
+"
+# Root password
+# Let in blank to not change
+ROOTPASSWD="Ch4ng3m3"
+
+#Root loging on ssh 
+DISABLE_ROOT_SSH="yes"
+#Disable selinux
+DISABLE_SELINUX="yes"
+
+#Network variables
+
+#Will you use bond interfaces?
+CONFIGURE_BONDS="yes"
+#If set to yes, do not forgive set the slaves
+
+#- VGs
+ROOTVG="vg00"
+ALTVG=$ROOTVG"alt"
+ALT_DISK=/dev/sda2
+ALTERNATE_EXCLUDE="swapvol crashvol"
+
+FSTYPE="ext4"
+#Volumes defined on golddisk
+VOL_NAME[0]="rootvol"
+VOL_SIZE[0]="5"
+
+VOL_NAME[1]="homevol"
+VOL_SIZE[1]="5"
+
+VOL_NAME[2]="swapvol"
+VOL_SIZE[2]="12"
+
+VOL_NAME[3]="crashvol"
+VOL_SIZE[3]="4"
+
+VOL_NAME[4]="tmpvol"
+VOL_SIZE[4]="3"
+
+VOL_NAME[5]="auditvol"
+VOL_SIZE[5]="0.256"
+
+VOL_NAME[6]="varvol"
+VOL_SIZE[6]="5"
+
+#New lvs to be created if needed [EXPERIMENTAL!]
+#VOL_NAME[7]="optvol"
+#VOL_SIZE[7]="10"
+#VOL_MOUNTPOINT[7]=/opt
+#VOL_FS[7]="ext4"
+
+################# Others VGS ###################
+VG_NAME[0]="vg01"
+VG_PVS[0]="/dev/sdb /dev/sdc"
+##########################################################################
+##########################################################################
+##########################################################################
+
