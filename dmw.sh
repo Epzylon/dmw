@@ -1,4 +1,6 @@
 #!/bin/bash
+
+#Arrays needed
 declare -a INTERFACE
 declare -a IP_INTERFACE
 declare -a NETMASK_INTERFACE
@@ -19,7 +21,7 @@ if [ -f template ];
 then
     . template
 else
-    echo "No template found, exiting"
+    echo "No template found, exiting. Bye!"
     exit 1
 fi
 
@@ -40,7 +42,7 @@ then
     FLAVOR=SLES;
 else
     echo "Not valid OS found";
-    exit 1
+    #exit 1
 fi
 if [ -f $EDS ];
 then
@@ -60,6 +62,7 @@ elif [ $FLAVOR == "SLES" ];
 then
     NTP_INIT=ntp;
 fi
+
 SSHD_INIT=sshd;
 NETWORK_INIT=networking;
 POSTFIX_INIT=postfix;
@@ -144,7 +147,13 @@ LOG_ERROR=/tmp/error.dmw.log
 LOG_OUTPUT=/tmp/output.dmw.log
 LOG_EXECUTED=/tmp/executed.dmw.log
 
-################Primitives############################
+################GUI Variables############################
+GREEN=`tput setf 2`
+WHITE=`tput setf 9`
+RED=`tput setf 4`
+WHITE=`tput setf 9`
+#################GUI Functions###########################
+
 
 function put_ok ()
 {
@@ -837,6 +846,7 @@ do
     free_les=$($VGDISPLAY -c $ROOTVG | cut -d: -f16)
     
     $LVDISPLAY /dev/$ROOTVG/${VOL_NAME[vol]} 2>/dev/null 1>&2
+	#IF LVEXIST
     if [ $? == 0 ];
     then
         #Current LEs on the LV
@@ -844,10 +854,11 @@ do
     
         #New amount of LEs
         new_les=$(dmw_vol_size /dev/$ROOTVG/${VOL_NAME[vol]} ${VOL_SIZE[vol]})
-        
+        #IF VOLSIZE
         if [ $? == 3 ];
         then
             diff_les=$(( $new_les - $current_les ))
+			#IF DIFFLES
             if [ $diff_les -lt $free_les ];
             then
                 echo -e "\tResizing ${VOL_NAME[vol]}"
@@ -864,29 +875,34 @@ do
                     $MKSWAP /dev/$ROOTVG/${VOL_NAME[vol]} 2>/dev/null 1>&2
                     $SWAPON -a
                 fi
-            else if [ $? == 2 ];
+			#ELSE DIFFLES
+            elif [ $? == 2 ];
             then
                 dmw_create_lv ${VOL_SIZE[vol]} ${VOL_NAME[vol]}} $ROOTVG
+				#IF CREATELV
                 if [[ $? == 0 ]];
                 then
                     $MKFS -t ${VOL_FS[vol]} /dev/$ROOTVG/${VOL_NAME[vol]} 2>/dev/null
                     dmw_make_mountpoint /dev/$ROOTVG/${VOL_NAME[vol]} ${VOL_MOUNTPOINT[vol]} ${VOL_FS[vol]}
-                    if [[ $? == 0 ]];
+                    if [[ $? == 0 ]]; #IF MOUNTPOINT
                     then
                         task_message "FS ${VOL_NAME[vol]} mounted on ${VOL_MOUNTPOINT[vol]}";
                         put_ok;
-                    else
+                    else #ELSE MOUNTPOINT
                         task_message "${VOL_MOUNTPOINT[vol]} couldn't be created";
                         put_fail;
-                    fi
+                    fi #FI MOUNTPOINT
+				fi #FI CREATELV
+			#ELSE DIFFLES
             else
                 echo -e "̣\tNot possible resize ${VOL_NAME[vol]} "
-                echo -e "\t\t$diff_les required $free_les available"; put_fail
-            fi
-        else
+                echo -e "\t\t$diff_les required $free_les available"; put_fail;
+	    	fi
+		#ELSE VOLSIZE
+       else
             echo -e "\t${VOL_NAME[vol]} will not be modified"
-        fi
-    fi
+       fi #FI VOLSIZE
+fi #IF LVEXIST
 done
 }
 
