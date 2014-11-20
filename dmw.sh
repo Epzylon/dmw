@@ -1,4 +1,7 @@
 #!/bin/bash
+# Do my work script 
+
+#Please keep under 80 lines of width
 
 #Arrays needed
 declare -a INTERFACE
@@ -51,7 +54,8 @@ then
 fi
 
 #Lets test if we are on a vm (vmware)
-lspci | grep -i vmware 2>/dev/null 1>&2 && echo "This server is a Virtual Machine of VMWare"
+lspci | grep -i vmware 2>/dev/null 1>&2 && echo "This server is a Virtual\
+ Machine of VMWare"
 
 
 #Services init files
@@ -157,8 +161,6 @@ WHITE=`tput setf 9`
 
 function put_ok ()
 {
-GREEN=`tput setf 2`
-WHITE=`tput setf 9`
 tput cuf $(( $(tput cols) - 60 ));
 echo "[$GREEN Ok $WHITE]" | tee -a log
 tput cuf 1;
@@ -168,8 +170,6 @@ log_output "-----> [Ok]"
 
 function put_fail ()
 {
-RED=`tput setf 4`
-WHITE=`tput setf 9`
 tput cuf $(( $(tput cols) - 60 ));
 echo "[$RED Fail $WHITE]"
 tput cuf 1;
@@ -208,6 +208,141 @@ function log_output ()
 time_log >> $LOG_OUTPUT;
 echo $@ >> $LOG_OUTPUT;
 }
+
+################################################################################
+################################################################################
+############################# Internal functions ###############################
+################################################################################
+################################################################################
+
+# Most of these functions are very simple, and some of them could be
+# replaced by only one command or an alias. But using the functions
+# keeps the code cleanest
+
+################################## LVM #########################################
+
+# VG FREE PE:
+# Take a vg name and return free PEs
+
+function vg_free_pe ()
+{
+# $1 vg name
+if [[ $# == 1 ]];
+then
+	$VGDISPLAY $1 2>/dev/null 1>&2
+	if [[ $? == 0 ]];
+	then
+		PES=$($VGDISPLAY -c $1 | cut -d: -f16)
+		echo $PES;
+		return 0;
+	else
+		echo "VG not found or error";
+		return 1;
+	fi
+fi
+}
+
+# VG PE SIZE
+# Returns the pe size of a given vg
+
+function vg_pe_size ()
+{
+# $1 vg name
+if [[ $# == 1 ]];
+then
+	$VGDISPLAY $1 2>/dev/null 1>&2
+	if [[ $? == 0 ]];
+	then
+		PE_SIZE=$($VGDISPLAY -c $1 | cut -d: -f13)
+		echo $PE_SIZE;
+		return 0;
+	else
+		echo "VG not found or error";
+	fi
+fi
+}
+
+
+
+# VG FREE:
+# Take a vg name and return free size in gb
+# sample:vg_free vg00
+# returns: 15 (15 gb free)
+
+function vg_free ()
+{
+# $1 vg name
+# $2 if $2 == MB then the output will be in MB (more accurate)
+
+$VGDISPLAY $1 2>/dev/null 1>&2
+if [[ $? == 0 ]];
+then
+	FREE_PE=$(vg_free_pe $1)
+	PE_SIZE=$(vg_pe_size $1)
+	FREE_SIZE_MB=$(($FREE_PE*$PE_SIZE))
+	FREE_SIZE_GB=$(($FREE_SIZE_MB/1024/1024))
+	if [[ $2 == "MB" ]];
+	then
+		echo $FREE_SIZE_MB;
+		return 0;
+	else
+		echo $FREE_SIZE_GB;
+		return 0;
+	fi
+else
+	echo 0;
+	return 1;
+fi
+fi
+}
+
+# LV SIZE:
+# Take a lv full path name and returns de size in MB
+# (also in PE or GB if needed)
+
+function lv_size ()
+{
+# $1 lv full path (like /dev/vg00/rootvol)
+# $2 [GB|LE] optionally you can choose GB or LE (MB by default)
+if [[ -f $1 ]];
+then
+	$LVDISPLAY $1 2>/dev/null 1>&2;
+	if [[ $? == 0 ]];
+	then
+		VG=$($LVDISPLAY -c $1| cut -d: -f2)
+		VG_PE_SIZE=$(vg_pe_size $VG)
+
+		LV_LES=$(($LVDISPLAY -c $1 | cut -d: -f8))
+		LV_SIZE_MB=$(($LV_LES*$VG_PE_SIZE))
+		LV_SIZE_GB=$(($LV_SIZE_MB/1024))
+
+		if [[ $2 == "GB" ]];
+		then
+			echo $LV_SIZE_GB;
+			return 0;
+		elif [[ $2 == "LE" ]];
+		then
+			echo $LV_LES;
+			return 0;
+		else
+			echo $LV_SIZE_MB;
+			return 0;
+		fi
+
+	else
+		echo "Bad LV path of non existent"
+		return 1;
+	fi
+else
+	echo "LV didn't found!";
+	return 2;
+fi
+}
+
+# LV 
+
+
+
 ################ Easy tasks functions ##################
 # set_hostname: set the hostname using the $NAME variable (overwriting)
 # set_localtime: set the time zone using the $ZONE variable (overwriting)
@@ -229,21 +364,30 @@ function dmw_set_hostname ()
 {
 #Set the hostname (overwriting the hostname file))
 
-task_message "Setting hostname: $NAME"
+task_message "Setting hostname: $NAME";
 if [ $FLAVOR == "RH" ];
 then
 echo "NETWORKING=yes
 NETWORKING_IPV6=no
 HOSTNAME="$NAME.$DOMAIN"
-GATEWAY=$GATEWAY
 "> $NET_FILE
 elif [ $FLAVOR == "SLES" ];
 then
     echo "$NAME.$DOMAIN" > /etc/HOSTNAME
-    echo "default $GATEWAY" > $INTERFACES_PATH"routes"
 fi
 $HOSTNAME $NAME && put_ok 
 
+}
+function dmw_set_gateway ()
+{
+task_message "Setting gateway: $GATEWAY";
+if [[ $FLAVOR == "RH" ]];
+then
+	echo "GATEWAY=$GATEWAY" >> $NET_FILE;
+elif [[ $FLAVOR == "SLES" ]];
+	echo "default $GATEWAY" > $INTERFACES_PATH"routes";
+fi
+put_ok;
 }
 
 function dmw_set_localtime ()
@@ -677,23 +821,7 @@ put_ok
 # vrfy_alt: verify whether the alternate vg exists or not
 # make_alt_vg: create the alternate vg on the disk configured
 
-function dmw_vg_free ()
-{
-# $1 vg name
-$VGDISPLAY $1
-if [[ $? == 0 ]];
-then
-    FREE_PE=$($VGDISPLAY -c $1 | cut -d: -f 16)
-    PE_SIZE=$($VGDISPLAY -c $1 | cut -d: -f 13)
-    FREE_SIZE=$(($FREE_PE*$PE_SIZE))
-    FREE_SIZE_GB=$(($FREE_SIZE/1024/1024))
-    echo $FREE_SIZE_GB;
-    return 0;
-else
-    echo 0;
-    return 1;
-fi
-}
+
 
 #Check vol
 function dmw_vol_size ()
@@ -792,8 +920,8 @@ function dmw_create_lv ()
 # $1 lvname
 # $2 size in GB
 # $3 vgname
-vg_size=dmw_vg_free $3
-if [[ $2 -le $$vg_size ]];
+vg_size=$(vg_free_gb $3)
+if [[ $2 -le $vg_size ]];
 then
     task_message "Creating LV $1"
     $LVCREATE -L $2 -n $1 $3 2>/dev/null
@@ -1009,6 +1137,7 @@ dmw_root_passwd;
 dmw_set_kdump;
 dmw_make_altvg;
 dmw_disable_selinux;
+dmw_set_gateway;
 
 }
 
@@ -1027,6 +1156,7 @@ function main {
 
     clear
     dmw_set_hostname;
+	dmw_set_gateway;
     dmw_create_secuser
     dmw_set_localtime;
     dmw_set_mail;
