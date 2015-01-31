@@ -1,4 +1,4 @@
-dmw 1.7
+dmw 1.8
 ===
 Abstract:
 	The goal of DMW (Do my work) is to avoid to do my work! :P
@@ -11,4 +11,9 @@ Do my work
 - Add tools installations
 - Add package installations
 - Manifest (print the current state of config)
-
+- Install HPSA
+- Remove Udev rules on pre-cloning
+- Configure kernel parameters
+- Align output
+- Clear interface naming for cloned vms
+- Post clone ssh root login
