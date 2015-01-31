@@ -16,4 +16,4 @@ Do my work
 - Configure kernel parameters
 - Align output
 - Clear interface naming for cloned vms
-- Post clone ssh root login
+

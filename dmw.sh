@@ -390,20 +390,6 @@ fi
 
 
 ################ Easy tasks functions ##################
-# set_hostname: set the hostname using the $NAME variable (overwriting)
-# set_localtime: set the time zone using the $ZONE variable (overwriting)
-# set_dns: set the Domain name servers. Uses $DNS_SERVERS (overwriting)
-# set_ntp: set the NTP servers. Uses $NTP_SERVERS (overwriting)
-# create_secuser: create the secadmin and set his password
-#                   use $SECUSER & $SECUSER_PASSWORD (not overwriting)
-# set_mail_postfix: set the ralayhost (not overwriting)
-# disable_ssh_rootlogin: disble root login from ssh (not overwriting)
-# set_snmp: change the communitty string. Use $SNMP_STRING
-# change_root_passwd: change the root passwd using $ROOTPASSWD
-# set_kdump: set the crashkernel parameter on the kernel. use $KDUMP_PARAM
-# enable_sar_login: check and enable sar login
-# disable_selinux: disable selinux, use $DISABLE_SELINUX
-# show_wwns: show wwns if are available
 
 #Set hostname
 function dmw_set_hostname ()
@@ -679,13 +665,6 @@ fi
 }
 
 ################## NETWORK FUNCTIONS #################
-# configure_int: set the ip and netmask for a given interface(overwriting)
-# configure_slave: set the interfaces given as slave of bonding interface (ov)
-#
-# configure_bonding: set the bonding modules (not overwriting)
-# configure_bond_interfaces: set all the slaves for each bond interface
-# configure_interfaces: set the files and hosts for each interface
-# dmw_set_routes: configure the files for statics routes
 
 function dmw_set_int ()
 {
@@ -871,14 +850,6 @@ put_ok
 }
 
 ################## STORAGE FUNCTIONS #################
-# dmw_vol_size: compare the vol size against the given size in gb
-# dmw_vg_free: retruns the free space on the vg in gb
-# dmw_create_lv: 
-# resize_fs: enlarge vols to the set size
-# vrfy_alt: verify whether the alternate vg exists or not
-# make_alt_vg: create the alternate vg on the disk configured
-
-
 
 #Check vol
 function dmw_vol_size ()
@@ -1231,6 +1202,7 @@ dmw_set_bonding;
 dmw_set_bonds;
 dmw_set_interfaces;
 dmw_set_routes;
+dmw_disable_rootlogin;
 dmw_sync_altvg;
 }
 
@@ -1263,4 +1235,4 @@ function main {
     #dmw_set_multipaths; #for use as interactive function not on build script
 }
 
-#mainf
+#main
