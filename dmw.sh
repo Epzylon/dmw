@@ -55,8 +55,25 @@ fi
 
 #Lets test if we are on a vm (vmware)
 lspci | grep -i vmware 2>/dev/null 1>&2 && echo "This server is a Virtual\
- Machine of VMWare"
+ Machine of VMWare" && VM="yes"
 
+######## HARD INFO #########
+MOTHER_SERIAL=$(dmidecode -t 2 | awk ' $1 == "Serial" { print $3 }')
+VENDOR=$(dmidecode -t 0 | awk ' $1 == "Vendor:" { print $2 }')
+BIOS=$(dmidecode -t 0 | awk ' $1 == "BIOS" && $2 ==  "Revision:"  { print $3 }')
+FW_REV=$(dmidecode -t 0 | awk ' $1 == "Firmware" { print $3 }')
+PRODUCT=$(dmidecode -t 1 | awk -F':' ' $1 ~ "Product Name"  { print $2 }')
+CHASSIS_SERIAL=$(dmidecode -t 3 | awk ' $1 == "Serial" { print $3 }')
+CORES=$(dmidecode -t 4 | awk '$1 == "Core" && $2 == "Enabled:" { print $3 }')
+RAM=$(dmidecode -t 19 | awk ' $1 == "Range" { print $3 }')
+
+echo "Hardware resume:"
+echo "$VENDOR | $PRODUCT"
+echo "Cores: $CORES | RAM: $RAM GB"
+echo "Serial: $CHASSIS_SERIAL"
+echo "Mother Serial: $MOTHER_SERIAL"
+echo "Firmware: $FW_REV"
+echo "BIOS version: $BIOS" 
 
 #Services init files
 if [ $FLAVOR == "RH" ];
@@ -293,7 +310,6 @@ else
 	echo 0;
 	return 1;
 fi
-fi
 }
 
 # LV SIZE:
@@ -339,7 +355,37 @@ else
 fi
 }
 
-# LV 
+# CREATE LV
+# Create a new LV on a given VG
+# $1 lv name
+# $2 lv size
+# $3 vg name
+
+function create_lv ()
+{
+# $1 lvname
+# $2 size in GB
+# $3 vgname
+vg_size=$(vg_free_gb $3)
+if [[ $2 -le $vg_size ]];
+then
+    task_message "Creating LV $1"
+    $LVCREATE -L $2 -n $1 $3 2>/dev/null
+    if [ $? == 0 ];
+    then
+        put_ok;
+        return 0;
+    else
+        put_fail;
+        return 1;
+    fi
+else
+    task_message "No available space on $3"
+    put_fail;
+    return 1
+fi
+}
+
 
 
 
@@ -385,6 +431,7 @@ if [[ $FLAVOR == "RH" ]];
 then
 	echo "GATEWAY=$GATEWAY" >> $NET_FILE;
 elif [[ $FLAVOR == "SLES" ]];
+then
 	echo "default $GATEWAY" > $INTERFACES_PATH"routes";
 fi
 put_ok;
@@ -396,7 +443,8 @@ function dmw_set_localtime ()
 task_message "Setting localtime: $ZONE"
 mv -f $LOCALTIME_FILE $LOCALTIME_FILE.old
 cp -f $ZONE_PATH$ZONE $LOCALTIME_FILE
-sed -ie 's/UTC/'$ZONE'/g' $CLOCK_FILE 2>/dev/null && put_ok || put_fail
+echo "ZONE='$ZONE'" > $CLOCK_FILE
+put_ok
 }
 
 function dmw_set_dns ()
@@ -490,8 +538,8 @@ then
     task_message "Disabling SSH root login: "
     if [ -f $SSHD_FILE ];
     then
-        grep -e '^PermitRootLogin' $SSHD_FILE | grep "yes" >/dev/null 2>&1
-        if [ $? == 0];
+        grep -e 'PermitRootLogin no' $SSHD_FILE >/dev/null 2>&1
+        if [ $? == 1 ];
         then
             sed -ie "s/#PermitRootLogin yes/PermitRootLogin no/" $SSHD_FILE 2>/dev/null;
             sed -ie "s/#UseDNS yes/UseDNS no/" $SSHD_FILE 2>/dev/null;
@@ -590,6 +638,7 @@ fi
 function dmw_show_wwns ()
 {
 #ToDo Please improve: Show port state
+if [[ $VM != "yes" ]]; then
 task_message "Searching WWNs:"
 wwn=$($SYSTOOL -c fc_host -v 2>/dev/null | grep "port_name" | cut -d'"' -f2)
 $SYSTOOL -c fc_host -v 2>/dev/null 1>&2
@@ -601,6 +650,7 @@ then
     for i in $wwn; do echo -e "\t\t$i"; done
 else
     echo -n " There are no wwns";put_fail;
+fi
 fi
 }
 
@@ -794,13 +844,20 @@ done
 
 function dmw_set_routes ()
 {
+#TODO REVISAR
 #Set the routes
 task_message "Setting Routes"
+if [[ ${#ROUTE_INT[@]} -eq 0 ]]; then
+    echo "no routes defined"
+    put_ok
+    return 0
+fi
+
 for route in $(seq 1 ${#ROUTE_DESTINATION[@]});
 do
-    if [ -n ${ROUTE_INT[$route]} && -f $INTERFACES_PATH"ifcfg-"$ROUTE_INT[route] ];
+    if [[ -n ${ROUTE_INT[$route]} && -f $INTERFACES_PATH"ifcfg-"$ROUTE_INT{[$route]} ]];
     then
-        echo "$ROUTE_DESTINATION via $ROUTE_GW dev $ROUTE_INT" >> $NET_R_FILE"route-"$ROUTE_INT[$route]
+        echo "$ROUTE_DESTINATION via $ROUTE_GW dev $ROUTE_INT" >> $NET_R_FILE"route-"${ROUTE_INT[$route]}
     fi
 done
 put_ok;
@@ -894,6 +951,7 @@ then
 else
     if [ ! -b $1 ];
     then
+        echo "The devices $1 doesn't exists!"
         return 2;
     fi
     if [ ! -d $2 ];
@@ -903,14 +961,16 @@ else
     #If fstype is specify by the user use it
     if [[ ! -z $3 ]];
     then
-        $FSTYPE=$3;
+        FSTYPE=$3;
     fi
     mount -t $3 $1 $2 2>/dev/null 1>&2
     if [ $? == 0 ];
     then
         echo "$1    $2    $FSTYPE  defaults    1 3"  >> $FSTAB;
+        echo "$2 mounted"; put_ok
         return 0
     else
+        echo "Most probably $1 is not formated on $FSTYPE"
         return 3;
     fi
 fi
@@ -943,9 +1003,9 @@ fi
 function dmw_create_vg ()
 {
 # $1 vgname
-# $2 pv
+# $2 pvs
 task_message "Creating VG $1";
-$VGCREATE $1 $2 2>/dev/null
+$VGCREATE $1 $2 2>/dev/null 1>&2
 if [ $? == 0 ];
 then
     put_ok;
@@ -958,7 +1018,25 @@ fi
 
 function dmw_second_vgs ()
 {
-return 0
+if [[ $CREATE_OTHERS_VGS == "yes" ]];
+then
+    task_message "Creating other vgs:"
+    for vg_id in $( seq 0 $(( ${#VG_NAME[@]} - 1 )) );
+    do
+        echo "Making "${VG_NAME[$vg_id]}":"
+        for disk in ${VG_PVS[$vg_id]};
+        do
+            echo -en "\tMaking whole disk partition"
+            dmw_make_partition $disk
+        echo -en "\t"
+        disk_list=""
+        for disk in ${VG_PVS[$vg_id]};
+        do
+            disk_list=$disk_list" "$disk"1"
+        done
+        dmw_create_vg ${VG_NAME[$vg_id]} $disk_list
+    done
+fi
 }
 function dmw_local_fs ()
 {
@@ -971,7 +1049,7 @@ vol_index=$(($vol_amount-1))
 for vol in $(seq 0 $vol_index);
 do
     #Current  free LEs on the VG
-    free_les=$($VGDISPLAY -c $ROOTVG | cut -d: -f16)
+    free_les=$(vg_free_pe $ROOTVG)
     
     $LVDISPLAY /dev/$ROOTVG/${VOL_NAME[vol]} 2>/dev/null 1>&2
 	#IF LVEXIST
@@ -1039,9 +1117,12 @@ done
 function dmw_vrfy_alt ()
 {
 #Search the vgalt
-task_message "Searching alternate vg:"
+if [[ $1 = "verbose" ]];
+then
+	task_message "Searching alternate vg:"
+fi
 $VGDISPLAY $ALTVG 2>/dev/null 1>&2
-if [ $? = 0 ];
+if [ $? == 0 && $1 == "verbose" ];
 then
     #Exists
     echo "Found!"; put_ok
@@ -1124,7 +1205,7 @@ fi
 
 function pre_clone {
 task_message "Executing task before clonning:";
-echo "\n";
+echo -e "\n";
 dmw_create_secuser;
 dmw_set_localtime;
 dmw_set_ntp;
@@ -1132,7 +1213,7 @@ dmw_set_dns;
 dmw_set_snmp;
 dmw_add_hosts_entries;
 dmw_enable_sarlogin;
-dmw_resize_fs;
+dmw_local_fs;
 dmw_root_passwd;
 dmw_set_kdump;
 dmw_make_altvg;
@@ -1143,8 +1224,9 @@ dmw_set_gateway;
 
 function post_clone {
 task_message "Executing task after clonning:";
-echo "\n"
+echo -e "\n"
 dmw_set_hostname;
+dmw_set_gateway;
 dmw_set_bonding;
 dmw_set_bonds;
 dmw_set_interfaces;
@@ -1181,4 +1263,4 @@ function main {
     #dmw_set_multipaths; #for use as interactive function not on build script
 }
 
-#main
+#mainf
