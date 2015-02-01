@@ -976,6 +976,7 @@ function dmw_create_vg ()
 # $1 vgname
 # $2 pvs
 task_message "Creating VG $1";
+
 $VGCREATE $1 $2 2>/dev/null 1>&2
 if [ $? == 0 ];
 then
@@ -992,19 +993,21 @@ function dmw_second_vgs ()
 if [[ $CREATE_OTHERS_VGS == "yes" ]];
 then
     task_message "Creating other vgs:"
+    echo ""
     for vg_id in $( seq 0 $(( ${#VG_NAME[@]} - 1 )) );
     do
-        echo "Making "${VG_NAME[$vg_id]}":"
+        echo " Making "${VG_NAME[$vg_id]}":"
         for disk in ${VG_PVS[$vg_id]};
         do
-            echo -en "\tMaking whole disk partition"
+            echo -e "\tMaking whole disk partition on $disk"
             dmw_make_partition $disk
-        echo -en "\t"
+        done
         disk_list=""
         for disk in ${VG_PVS[$vg_id]};
         do
             disk_list=$disk_list" "$disk"1"
         done
+        echo -ne "\t"
         dmw_create_vg ${VG_NAME[$vg_id]} $disk_list
     done
 fi
@@ -1227,7 +1230,7 @@ function main {
     dmw_set_bonds;
     dmw_set_interfaces;
     dmw_set_routes;
-    #dmw_root_passwd;
+    dmw_root_passwd;
     dmw_show_wwns;
     dmw_make_altvg;
     dmw_sync_altvg;
