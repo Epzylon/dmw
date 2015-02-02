@@ -97,7 +97,8 @@ ROOTVG="vg00"
 ALTVG=$ROOTVG"alt"
 ALT_DISK=/dev/sda2
 ALTERNATE_EXCLUDE="swapvol crashvol"
-
+#MB to round when there is no space left on the vg
+LV_CREATION_ROUND=4 
 FSTYPE="ext4"
 #Volumes defined on golddisk
 VOL_NAME[0]="rootvol"
@@ -130,6 +131,11 @@ VOL_SIZE[6]="5"
 ################# Others VGS ###################
 #VG_NAME[0]="vg01"
 #VG_PVS[0]="/dev/sdb /dev/sdc"
+################# MPs in VGs ###################
+#MP_DIR[0]=/app
+#MP_LV[0]=appvol
+#MP_SIZE[0]=75000
+#MP_VG[0]=vg00
 ##########################################################################
 ##########################################################################
 ##########################################################################

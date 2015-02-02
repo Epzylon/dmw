@@ -364,13 +364,13 @@ fi
 function create_lv ()
 {
 # $1 lvname
-# $2 size in GB
+# $2 size in MB
 # $3 vgname
-vg_size=$(vg_free_gb $3)
+vg_size=$(vg_free $3 "MB")
 if [[ $2 -le $vg_size ]];
 then
     task_message "Creating LV $1"
-    $LVCREATE -L $2 -n $1 $3 2>/dev/null
+    $LVCREATE -L $2"M" -n $1 $3 2>/dev/null
     if [ $? == 0 ];
     then
         put_ok;
@@ -380,9 +380,19 @@ then
         return 1;
     fi
 else
-    task_message "No available space on $3"
-    put_fail;
-    return 1
+    if [ $(($vg_size - $LV_CREATION_ROUND)) -ge $2 ];
+    then
+        task_message "Rounding size of $2"
+        $LVCREATE -L $(($2 - $LV_CREATION_ROUND))"M" -n $1 $3 2>/dev/null
+        if [ $? == 0 ];
+        then
+            put_ok;
+            return 0;
+        else
+            task_message "No available space on $3"
+            put_fail;
+            return 1;
+        fi
 fi
 }
 
@@ -922,7 +932,7 @@ then
 else
     if [ ! -b $1 ];
     then
-        echo "The devices $1 doesn't exists!"
+        echo -n "The devices $1 doesn't exists!"; put_fail
         return 2;
     fi
     if [ ! -d $2 ];
@@ -938,10 +948,10 @@ else
     if [ $? == 0 ];
     then
         echo "$1    $2    $FSTYPE  defaults    1 3"  >> $FSTAB;
-        echo "$2 mounted"; put_ok
+        echo -n "$2 mounted"; put_ok
         return 0
     else
-        echo "Most probably $1 is not formated on $FSTYPE"
+        echo -n "Most probably $1 is not formated on $FSTYPE"; put_fail
         return 3;
     fi
 fi
@@ -1012,6 +1022,22 @@ then
     done
 fi
 }
+
+function dmw_second_mps ()
+{
+#Still doesn't support dependencies
+if [[ $MAKE_MP == "yes" ]];
+then
+    task_message "Creating Mount Points"
+    for lv_id in $( seq 0 $(( ${#MP_DIR[@]} - 1 )) );
+    do
+        create_lv ${MP_LV[$lv_id]} ${MP_SIZE[$lv_id]} ${MP_VG[$lv_id]}
+        dmw_make_mountpoint /dev/${MP_VG[$lv_id]}/${MP_LV[$lv_id]} ${MP_DIR[$lv_id]}
+    done
+
+fi
+
+}
 function dmw_local_fs ()
 {
 #Resize file systems if needed and is possible
@@ -1076,7 +1102,7 @@ do
 			#ELSE DIFFLES
             else
                 echo -e "̣\tNot possible resize ${VOL_NAME[vol]} "
-                echo -e "\t\t$diff_les required $free_les available"; put_fail;
+                echo -en "\t\t$diff_les required $free_les available"; put_fail;
 	    	fi
 		#ELSE VOLSIZE
        else
@@ -1188,6 +1214,7 @@ dmw_set_snmp;
 dmw_add_hosts_entries;
 dmw_enable_sarlogin;
 dmw_local_fs;
+dmw_second_vgs;
 dmw_root_passwd;
 dmw_set_kdump;
 dmw_make_altvg;
@@ -1222,10 +1249,11 @@ function main {
     dmw_add_hosts_entries;
     dmw_set_snmp;
     dmw_local_fs;
+    dmw_second_vgs;
     dmw_set_kdump;
     dmw_enable_sarlogin;
     dmw_disable_rootlogin;
-    dmw_disable_selinux
+    dmw_disable_selinux;
     dmw_set_bonding;
     dmw_set_bonds;
     dmw_set_interfaces;
