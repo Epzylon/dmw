@@ -214,6 +214,7 @@ tput sgr0
 echo -e "\n"
 }
 
+##### TODO #####
 function time_log()
 {
 large=$(date +"%d-%m-%y %H:%m");
@@ -275,6 +276,7 @@ then
 		return 0;
 	else
 		echo "VG not found or error";
+        return 1
 	fi
 fi
 }
@@ -395,8 +397,6 @@ else
         fi
 fi
 }
-
-
 
 
 ################ Easy tasks functions ##################
