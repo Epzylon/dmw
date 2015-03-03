@@ -67,9 +67,10 @@ CHASSIS_SERIAL=$(dmidecode -t 3 | awk ' $1 == "Serial" { print $3 }')
 CORES=$(dmidecode -t 4 | awk '$1 == "Core" && $2 == "Enabled:" { print $3 }')
 RAM=$(dmidecode -t 19 | awk ' $1 == "Range" { print $3 }')
 
+echo "Hardware resume:"
+echo "==============="
 if [[ -n $VENDOR && -n $PRODUCT ]];
 then
-    echo "Hardware resume:"
     echo "$VENDOR | $PRODUCT"
 fi
 if [[ -n $CORES && -n $RAM ]];
@@ -92,6 +93,7 @@ if [[ -n $BIOS ]];
 then
     echo "BIOS version: $BIOS" 
 fi
+echo "==============="
 
 #Services init files
 if [ $FLAVOR == "RH" ];
@@ -774,7 +776,15 @@ then
     echo "DEVICE=$1" >> $INT_FILE
     echo "IPADDR=$2" >> $INT_FILE
     echo "NETMASK=$3" >> $INT_FILE
-    echo "ONBOOT=yes" >> $INT_FILE
+   
+    if [ $FLAVOR == "RH" ];
+    then
+        echo "ONBOOT=yes" >> $INT_FILE
+    elif [ $FLAVOR == "SLES" ];
+    then
+        echo "STARTMODE=onboot" >> $INT_TYPE
+    fi
+
     if [[ $4 != "bond" ]];
     then
         echo "HWADDR=$MAC" >> $INT_FILE
