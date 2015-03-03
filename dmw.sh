@@ -1195,15 +1195,21 @@ then
 	task_message "Searching alternate vg:"
 fi
 $VGDISPLAY $ALTVG 2>/dev/null 1>&2
-if [ $? == 0 && $1 == "verbose" ];
+if [[ $? == 0 ]];
 then
     #Exists
-    echo "Found!"; put_ok
+    if [[ $verbose == "yes" ]];
+    then
+        echo "Found"; put_ok
+    fi
     return 0;
 else
     #Doesn't Exists
-    echo "Not found!"; put_fail
-    return 1;
+    if [[ $verbose == "yes" ]];
+    then
+        echo "Not found"; put_fail
+    fi
+return 1;
 fi
 }
 
@@ -1230,10 +1236,10 @@ dmw_vrfy_alt 2>/dev/null 1>&2
 if [ $? == 0 ];
 then
     task_message "Syncronizing alternate (this take a while):"
-    if [ -f $ALTERNATE_FILE ];
-    then
-        echo "ALTERNATE_EXCLUDE="$ALTERNATE_EXCLUDE >> $ALTERNATE_FILE;
-    fi
+    #if [ -f $ALTERNATE_FILE ];
+    #then
+    #    echo "ALTERNATE_EXCLUDE="$ALTERNATE_EXCLUDE >> $ALTERNATE_FILE;
+    #fi
     $ALTERNATE -c 2>/dev/null 1>&2
     if [ $? == 0 ];
     then
