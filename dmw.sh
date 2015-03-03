@@ -67,13 +67,31 @@ CHASSIS_SERIAL=$(dmidecode -t 3 | awk ' $1 == "Serial" { print $3 }')
 CORES=$(dmidecode -t 4 | awk '$1 == "Core" && $2 == "Enabled:" { print $3 }')
 RAM=$(dmidecode -t 19 | awk ' $1 == "Range" { print $3 }')
 
-echo "Hardware resume:"
-echo "$VENDOR | $PRODUCT"
-echo "Cores: $CORES | RAM: $RAM GB"
-echo "Serial: $CHASSIS_SERIAL"
-echo "Mother Serial: $MOTHER_SERIAL"
-echo "Firmware: $FW_REV"
-echo "BIOS version: $BIOS" 
+if [[ -n $VENDOR && -n $PRODUCT ]];
+then
+    echo "Hardware resume:"
+    echo "$VENDOR | $PRODUCT"
+fi
+if [[ -n $CORES && -n $RAM ]];
+then
+    echo "Cores: $CORES | RAM: $RAM GB"
+fi
+if [[ -n $CHASSIS_SERIAL ]];
+then
+    echo "Serial: $CHASSIS_SERIAL"
+fi
+if [[ -n $MOTHER_SERIAL ]];
+then
+    echo "Mother Serial: $MOTHER_SERIAL"
+fi
+if [[ -n $FW_REV ]];
+then
+    echo "Firmware: $FW_REV"
+fi
+if [[ -n $BIOS ]];
+then
+    echo "BIOS version: $BIOS" 
+fi
 
 #Services init files
 if [ $FLAVOR == "RH" ];
@@ -173,6 +191,7 @@ GREEN=`tput setf 2`
 WHITE=`tput setf 9`
 RED=`tput setf 4`
 WHITE=`tput setf 9`
+ORANGE=`tput setf 7`
 #################GUI Functions###########################
 
 
@@ -193,7 +212,13 @@ tput cuf 1;
 #tput rc;
 log_output "----->  [Fail]"
 }
-
+function put_warning ()
+{
+tput cut $(( $(tput cols) - 60 ));
+echo "{$ORANGE Ok $WHITE]"
+tput cuf 1
+log_output "------> [Warning]"
+}
 function task_message ()
 {
 log_output $@
@@ -382,7 +407,7 @@ then
         return 1;
     fi
 else
-    if [ $(($vg_size - $LV_CREATION_ROUND)) -ge $2 ];
+    if [[ $(($vg_size - $LV_CREATION_ROUND)) -ge $2 ]];
     then
         task_message "Rounding size of $2"
         $LVCREATE -L $(($2 - $LV_CREATION_ROUND))"M" -n $1 $3 2>/dev/null
@@ -395,9 +420,49 @@ else
             put_fail;
             return 1;
         fi
+    fi
 fi
 }
 
+##################################################################
+########################## Check tasks ###########################
+##################################################################
+function check_hostname ()
+{
+task_message "Checking hostname:"
+hostname=$(hostname -f)
+hostname_infile=$(cat $NET_FILE | awk -F'=' ' $1 == "HOSTNAME" { print $2 }')
+echo -en "\nCurrent hostname: $hostname"
+if [ $hostname == "$HOSTNAME.$DOMAIN" ];
+then
+    put_ok
+else
+    put_fail
+fi
+echo -n "Hostname on file: $hostname_infile"
+if [ hostname_infile == "$HOSTNAME.$DOMAIN" ];
+then
+    put_ok
+else
+    put_fail
+fi
+}
+function check_cores ()
+{
+task_message "Checking Cores:"
+echo $CORES
+put_ok
+}
+
+
+function check_all ()
+{
+check_cores
+
+}
+##################################################################
+########################## BUILD TASKS ###########################
+##################################################################
 
 ################ Easy tasks functions ##################
 
@@ -420,6 +485,7 @@ fi
 $HOSTNAME $NAME && put_ok 
 
 }
+
 function dmw_set_gateway ()
 {
 task_message "Setting gateway: $GATEWAY";
@@ -1007,14 +1073,11 @@ then
     for vg_id in $( seq 0 $(( ${#VG_NAME[@]} - 1 )) );
     do
         echo " Making "${VG_NAME[$vg_id]}":"
+        disk_list=""
         for disk in ${VG_PVS[$vg_id]};
         do
             echo -e "\tMaking whole disk partition on $disk"
             dmw_make_partition $disk
-        done
-        disk_list=""
-        for disk in ${VG_PVS[$vg_id]};
-        do
             disk_list=$disk_list" "$disk"1"
         done
         echo -ne "\t"
