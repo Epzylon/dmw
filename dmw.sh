@@ -1112,6 +1112,7 @@ then
     for lv_id in $( seq 0 $(( ${#MP_DIR[@]} - 1 )) );
     do
         create_lv ${MP_LV[$lv_id]} ${MP_SIZE[$lv_id]} ${MP_VG[$lv_id]}
+        mkfs.$FSTYPE /dev/${MP_VG[$lv_id]}/${MP_LV[$lv_id]} 2>/dev/null 1>&2
         dmw_make_mountpoint /dev/${MP_VG[$lv_id]}/${MP_LV[$lv_id]} ${MP_DIR[$lv_id]}
     done
 
