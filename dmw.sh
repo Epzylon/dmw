@@ -694,9 +694,16 @@ function dmw_disable_selinux ()
 #ToDo: improve search if the parameteres are not set already
 if [ $DISABLE_SELINUX == "yes" ];
 then
-    task_message "Disabling selinux (requires rebot):"
-    (sed -ie 's/SELINUX=permissive/SELINUX=disabled/' $SELINUX_FILE 2>/dev/null\
-    && sed -ie 's/audit=1/audit=1 selinux=0/' $GRUB_FILE ) && put_ok || put_fail
+    if [ $FLAVOR == "RHEL"];
+    then
+        task_message "Disabling selinux (requires rebot):"
+        (sed -ie 's/SELINUX=permissive/SELINUX=disabled/' $SELINUX_FILE 2>/dev/null\
+        && sed -ie 's/audit=1/audit=1 selinux=0/' $GRUB_FILE ) && put_ok || put_fail
+    elif [ $FLAVOR == "SLES" ];
+    then
+        task_message "SuSE has selinux disabled by default:"
+        put_ok
+    fi
 fi
 }
 function dmw_show_wwns ()
