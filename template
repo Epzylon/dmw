@@ -89,6 +89,7 @@ DISABLE_SELINUX="yes"
 #Network variables
 
 #Will you use bond interfaces?
+# will auto activate if some interface has slave interfaces
 CONFIGURE_BONDS="yes"
 #If set to yes, do not forgive set the slaves
 
@@ -133,6 +134,7 @@ CREATE_OTHERS_VGS=yes
 #VG_NAME[0]="vg01"
 #VG_PVS[0]="/dev/sdb /dev/sdc"
 ################# MPs in VGs ###################
+MAKE_MP=no
 #MP_DIR[0]=/app
 #MP_LV[0]=appvol
 #MP_SIZE[0]=75000

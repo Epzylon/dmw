@@ -694,11 +694,11 @@ function dmw_disable_selinux ()
 #ToDo: improve search if the parameteres are not set already
 if [ $DISABLE_SELINUX == "yes" ];
 then
-    if [ $FLAVOR == "RHEL"];
+    if [ $FLAVOR == "RH" ];
     then
         task_message "Disabling selinux (requires rebot):"
         (sed -ie 's/SELINUX=permissive/SELINUX=disabled/' $SELINUX_FILE 2>/dev/null\
-        && sed -ie 's/audit=1/audit=1 selinux=0/' $GRUB_FILE ) && put_ok || put_fail
+        && sed -ie 's/audit=1/audit=1 selinux=0/' $GRUB_FILE) && put_ok || put_fail
     elif [ $FLAVOR == "SLES" ];
     then
         task_message "SuSE has selinux disabled by default:"
@@ -810,6 +810,14 @@ function dmw_set_bonding ()
 {
 # Set the bonding configuration not the bond interfaces
 task_message "Setting bonding module:"
+for interface in (seq 1 ${#INTERFACE[@]});
+    do
+        if [[ ${BOND_SLAVES[$interface]} != "" ]];
+        then
+            CONFIGURE_BONDS="yes"
+            break
+        fi
+    done
 if [ $CONFIGURE_BONDS == "yes" ];
 then
     if [ -d $MODPROBE_PATH ];
@@ -819,9 +827,9 @@ then
         BOND_FILE=$MODPROBE_FILE
     fi
     echo ""
-    for int in $(seq 0 ${#INTERFACE[@]});
+    for int in $(seq 1 ${#INTERFACE[@]});
     do
-    if [ ${INT_TYPE[$int]} == "bond" ];
+    if [[ ${INT_TYPE[$int]} == "bond" ]];
     then
         echo "alias ${INTERFACE[$int]} bonding" >> $BOND_FILE
         echo "options ${INTERFACE[$int]} mode=1 miimon=80" >> $BOND_FILE
@@ -869,31 +877,35 @@ fi
 
 function dmw_set_bonds ()
 {
-if [ $CONFIGURE_BONDS == "yes" ];
-then
-    #Configure the properly slaves
-    task_message "Setting slaves for bonds interfaces:"
-    echo ""
-    for bond in $(seq 1 ${#INTERFACE[@]});
-    do
-    if [ ${INT_TYPE[$bond]} == "bond" ];
+
+#Configure the properly slaves
+for int in $(seq 1 ${#INTERFACE[@]});
+do
+    if [[ ${BOND_SLAVES[$int]} != "" ]];
     then
-        for slave in ${BOND_SLAVES[$bond]};
-        do
-            dmw_set_slave $slave ${INTERFACE[$bond]}
-            if [ $? ];
-            then
-                echo -en "\t$slave on bond$bond"; put_ok
-            else
-                echo -en "\t$slave for bond$bond not exists"; put_fail
-            fi
-        done
+        CONFIGURE_BONDS="yes"
+        break
     fi
+done
+if [[ $CONFIGURE_BONDS == "yes" ]];
+task_message "Setting slaves for bonds interfaces:"
+echo ""
+for bond in $(seq 1 ${#INTERFACE[@]});
+do
+if [ ${INT_TYPE[$bond]} == "bond" ];
+then
+    for slave in ${BOND_SLAVES[$bond]};
+    do
+        dmw_set_slave $slave ${INTERFACE[$bond]}
+        if [ $? ];
+        then
+            echo -en "\t$slave on bond$bond"; put_ok
+        else
+            echo -en "\t$slave for bond$bond not exists"; put_fail
+        fi
     done
-else
-    task_message "Bond interfaces will not be configured!"
-    echo ""
-fi
+    fi
+done
 }
 
 function dmw_set_interfaces ()
