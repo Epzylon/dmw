@@ -56,7 +56,8 @@ fi
 #Lets test if we are on a vm (vmware)
 lspci | grep -i vmware 2>/dev/null 1>&2 && echo "This server is a Virtual\
  Machine of VMWare" && VM="yes"
-
+function dmw_show_hw_info()
+{
 ######## HARD INFO #########
 MOTHER_SERIAL=$(dmidecode -t 2 | awk ' $1 == "Serial" { print $3 }')
 VENDOR=$(dmidecode -t 0 | awk ' $1 == "Vendor:" { print $2 }')
@@ -64,18 +65,19 @@ BIOS=$(dmidecode -t 0 | awk ' $1 == "BIOS" && $2 ==  "Revision:"  { print $3 }')
 FW_REV=$(dmidecode -t 0 | awk ' $1 == "Firmware" { print $3 }')
 PRODUCT=$(dmidecode -t 1 | awk -F':' ' $1 ~ "Product Name"  { print $2 }')
 CHASSIS_SERIAL=$(dmidecode -t 3 | awk ' $1 == "Serial" { print $3 }')
-CORES=$(dmidecode -t 4 | awk '$1 == "Core" && $2 == "Enabled:" { print $3 }')
-RAM=$(dmidecode -t 19 | awk ' $1 == "Range" { print $3 }')
+CORES=$(cat /proc/cpuinfo| grep processor | wc -l)
+RAM_MB=$(cat /proc/meminfo | awk '{ print $2 }' | head -n 1)
+RAM=$(($RAM_MB/1000))
 
 echo "Hardware resume:"
 echo "==============="
 if [[ -n $VENDOR && -n $PRODUCT ]];
 then
-    echo "$VENDOR | $PRODUCT"
+    echo "Vendor and Product: $VENDOR | $PRODUCT"
 fi
 if [[ -n $CORES && -n $RAM ]];
 then
-    echo "Cores: $CORES | RAM: $RAM GB"
+    echo "Cores: $CORES | RAM: $RAM MB"
 fi
 if [[ -n $CHASSIS_SERIAL ]];
 then
@@ -94,7 +96,8 @@ then
     echo "BIOS version: $BIOS" 
 fi
 echo "==============="
-
+}
+dmw_show_hw_info
 #Services init files
 if [ $FLAVOR == "RH" ];
 then 
@@ -810,7 +813,7 @@ function dmw_set_bonding ()
 {
 # Set the bonding configuration not the bond interfaces
 task_message "Setting bonding module:"
-for interface in (seq 1 ${#INTERFACE[@]});
+for interface in $(seq 1 ${#INTERFACE[@]});
     do
         if [[ ${BOND_SLAVES[$interface]} != "" ]];
         then
@@ -849,7 +852,7 @@ function dmw_set_slave ()
 #   configure_slave eth0 bond0
 
 $ICFG $1 2>/dev/null 1>&2
-if [ $? ];
+if [ $? == 0 ];
 then
     INT_FILE=$INTERFACES_PATH"ifcfg-$1"
     MAC=$(ifconfig $1 | grep HW | awk {'print $5'})
@@ -887,25 +890,27 @@ do
         break
     fi
 done
-if [[ $CONFIGURE_BONDS == "yes" ]];
-task_message "Setting slaves for bonds interfaces:"
-echo ""
-for bond in $(seq 1 ${#INTERFACE[@]});
-do
-if [ ${INT_TYPE[$bond]} == "bond" ];
-then
-    for slave in ${BOND_SLAVES[$bond]};
+if [ $CONFIGURE_BONDS -eq "yes" ];
+    then
+        task_message "Setting slaves for bonds interfaces:"
+        echo ""
+    for bond in $(seq 1 ${#INTERFACE[@]});
     do
-        dmw_set_slave $slave ${INTERFACE[$bond]}
-        if [ $? ];
+        if [ ${INT_TYPE[$bond]} == "bond" ];
         then
-            echo -en "\t$slave on bond$bond"; put_ok
-        else
-            echo -en "\t$slave for bond$bond not exists"; put_fail
+            for slave in ${BOND_SLAVES[$bond]};
+            do
+                #dmw_set_slave $slave ${INTERFACE[$bond]}
+                if [ $? == 0 ];
+                then
+                    echo -en "\t$slave on bond$bond"; put_ok
+                else
+                    echo -en "\t$slave for bond$bond not exists"; put_fail
+                fi
+            done
         fi
     done
-    fi
-done
+fi
 }
 
 function dmw_set_interfaces ()
@@ -1339,7 +1344,7 @@ function main {
 
     clear
     dmw_set_hostname;
-	dmw_set_gateway;
+    dmw_set_gateway;
     dmw_create_secuser
     dmw_set_localtime;
     dmw_set_mail;
