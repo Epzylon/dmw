@@ -56,6 +56,7 @@ fi
 #Lets test if we are on a vm (vmware)
 lspci | grep -i vmware 2>/dev/null 1>&2 && echo "This server is a Virtual\
  Machine of VMWare" && VM="yes"
+
 function dmw_show_hw_info()
 {
 ######## HARD INFO #########
@@ -490,7 +491,18 @@ fi
 $HOSTNAME $NAME && put_ok 
 
 }
-
+function dmw_set_hosts ()
+{
+#Set additional entries for /etc/hosts file
+if [[ -n $HOSTS ]];
+then
+    task_message "Setting hosts on $HOSTS_FILE"
+    echo "" >> $HOSTS_FILE
+    echo "#Additional hosts" >> $HOSTS_FILE
+    echo $HOSTS >> $HOSTS_FILE
+    put_ok
+fi
+}
 function dmw_set_gateway ()
 {
 task_message "Setting gateway: $GATEWAY";
@@ -1312,6 +1324,7 @@ task_message "Executing task before clonning:";
 echo -e "\n";
 dmw_create_secuser;
 dmw_set_localtime;
+dmw_set_hosts;
 dmw_set_ntp;
 dmw_set_dns;
 dmw_set_snmp;
@@ -1344,6 +1357,7 @@ function main {
 
     clear
     dmw_set_hostname;
+    dmw_set_hosts;
     dmw_set_gateway;
     dmw_create_secuser
     dmw_set_localtime;
