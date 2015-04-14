@@ -1407,11 +1407,19 @@ fi
 }
 
 #### Other tools #####
-#function clean_udev {
-#task_message "Deleting udev file"
-#if [[ -f ]]
-
-#}
+function clean_udev {
+task_message "Deleting udev file"
+if [[ -f $UDEV_RULES$UDEV_RULE_NET ]];
+then
+    rm -f $UDEV_RULES$UDEV_RULE_NET
+fi
+for file in $(ls $NET_R_FILE/ifcfg-eth*);
+do
+    sed -ie '/HWADDR/ d' $file
+    sed -ie '/UUID/ d' $file
+done
+put_ok
+}
 
 function pre_clone {
 task_message "Executing task before clonning:";
@@ -1420,7 +1428,7 @@ dmw_create_secuser;
 dmw_set_localtime;
 dmw_set_hosts;
 dmw_set_ntp;
-dmw_set_dns;
+dmw_set_dns;r
 dmw_set_snmp;
 dmw_add_hosts_entries;
 dmw_enable_sarlogin;
@@ -1432,6 +1440,7 @@ dmw_make_altvg;
 dmw_disable_selinux;
 dmw_set_gateway;
 
+clean_udev;
 }
 
 function post_clone {
