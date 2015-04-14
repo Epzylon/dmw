@@ -1045,14 +1045,19 @@ task_message "Setting Routes"
 if [[ ${#ROUTE_INT[@]} -eq 0 ]]; then
     echo "no routes defined"
     put_ok
-    return 0
+    return 1
 fi
 
 for route in $(seq 1 ${#ROUTE_DESTINATION[@]});
 do
-    if [[ -n ${ROUTE_INT[$route]} && -f $INTERFACES_PATH"ifcfg-"$ROUTE_INT{[$route]} ]];
+    if [[ -n ${ROUTE_INT[$route]} && -f "$INTERFACES_PATH/ifcfg-${ROUTE_INT[$route]}" ]];
     then
-        echo "$ROUTE_DESTINATION via $ROUTE_GW dev $ROUTE_INT" >> $NET_R_FILE"route-"${ROUTE_INT[$route]}
+        echo -e "\t${ROUTE_DESTINATION[$route]} via ${ROUTE_GW[$route]} >>  $NET_R_FILE/route-${ROUTE_INT[$route]}"
+        if [[ -n ${ROUTE_COMMENT[$route]} ]];
+        then
+            echo "#${ROUTE_COMMENT[$route]}" >> $NET_R_FILE/route-${ROUTE_INT[$route]};
+        fi
+        echo "${ROUTE_DESTINATION[$route]} via ${ROUTE_GW[$route]}" >> $NET_R_FILE/route-${ROUTE_INT[$route]}
     fi
 done
 put_ok;
@@ -1434,6 +1439,7 @@ dmw_add_hosts_entries;
 dmw_enable_sarlogin;
 dmw_local_fs;
 dmw_second_vgs;
+#dmw_second_mps;
 dmw_root_passwd;
 dmw_set_kdump;
 dmw_make_altvg;
