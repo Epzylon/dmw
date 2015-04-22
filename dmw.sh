@@ -813,18 +813,21 @@ if [[ ! $# -eq 2 ]];
 then
     return 1;
 fi
-$SYSCTL $1 2>/dev/null 1>&2
+$SYSCTL $parameter 2>/dev/null 1>&2
 if [[ $? == 0 ]];
 then
-    grep $1 $SYSCTL_FILE 2>/dev/null 1>&2
+    grep $parameter $SYSCTL_FILE 2>/dev/null 1>&2
     if [[ $? == 0 ]];
     then
-        current_value=$(grep $1 $SYSCTL_FILE|cut -d'=' -f2)
-        echo -e "\tThe parameter is already configured on $SYSCTL_FILE, replacing"
-        sed -i '/'$parameter'/ s/'$current_value'/'$value'/' $SYSCTL_FILE
+        current_value=$(grep $parameter $SYSCTL_FILE|awk '!/^#/ { print $3 }')
+        echo -e "\tReplacing $current_value for $value on $parameter"
+        sed -ie '/'$parameter'/ s/'$current_value'/'$value'/' $SYSCTL_FILE
+    else
+        echo -e "\tAdding the parameter $1 = $2"
+        echo "$parameter = $value" >> $SYSCTL_FILE
     fi
 else
-    echo "\tThe parameter $1 isn't recognized by sysctl"; put_fail
+    echo  -e "\tThe parameter $1 isn't recognized by sysctl"; put_fail
 fi
 
 }
@@ -1217,7 +1220,7 @@ then
     echo ""
     for vg_id in $( seq 0 $(( ${#VG_NAME[@]} - 1 )) );
     do
-        echo " Making "${VG_NAME[$vg_id]}":"
+        echo "Making "${VG_NAME[$vg_id]}":"
         disk_list=""
         for disk in ${VG_PVS[$vg_id]};
         do
@@ -1396,14 +1399,13 @@ function dmw_make_altvg ()
 dmw_vrfy_alt
 if [ $? == 1 ];
 then
-    task_message "Using $ALT_DISK to create alternate vg"
-    dmw_make_partition $ALT_DISK;
-    if [ $? == 0 ];
+    task_message "Using $ALT_DISK to create alternate vg (will delay some minutes... "
+    $ALTERNATE -c -d $ALT_DISK 2>/dev/null 1>&2
+    if [[ $? == 0 ]];
     then
-        $VGCREATE $ALTVG $ALT_DISK"1" 2>/dev/null 1>&2 && put_ok || put_fail;
+        put_ok;
     else
         put_fail;
-        return 1
     fi
 else
     task_message "$ALTVG already created!"
