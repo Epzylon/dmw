@@ -807,7 +807,7 @@ function dmw_set_kernel_parameter ()
 #$2 value
 
 parameter=$1
-value=$2
+value="$2 $3 $4 $5 $6" 
 
 if [[ ! $# -eq 2 ]];
 then
@@ -819,13 +819,14 @@ then
     grep $parameter $SYSCTL_FILE 2>/dev/null 1>&2
     if [[ $? == 0 ]];
     then
-        current_value=$(grep $parameter $SYSCTL_FILE|awk '!/^#/ { print $3 }')
+        current_value=$(grep $parameter $SYSCTL_FILE|awk -F= '!/^#/ { print $2 }')
         echo -e "\tReplacing $current_value for $value on $parameter"
-        sed -ie '/'$parameter'/ s/'$current_value'/'$value'/' $SYSCTL_FILE
+        sed -ie "/$parameter/ s/$current_value/ $value/"  $SYSCTL_FILE
     else
-        echo -e "\tAdding the parameter $1 = $2"
+        echo -e "\tAdding parameter $1 = $2"
         echo "$parameter = $value" >> $SYSCTL_FILE
     fi
+    $SYSCTL -p 2>/dev/null 1>&2
 else
     echo  -e "\tThe parameter $1 isn't recognized by sysctl"; put_fail
 fi
