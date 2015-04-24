@@ -1400,8 +1400,9 @@ function dmw_make_altvg ()
 dmw_vrfy_alt
 if [ $? == 1 ];
 then
-    task_message "Using $ALT_DISK to create alternate vg (will delay some minutes... "
-    $ALTERNATE -c -d $ALT_DISK 2>/dev/null 1>&2
+    task_message "Using $ALT_DISK to create alternate vg, will delay some minutes... "
+    echo ""
+    echo "y" | $ALTERNATE -c -d $ALT_DISK 2>/dev/null 1>&2
     if [[ $? == 0 ]];
     then
         put_ok;
