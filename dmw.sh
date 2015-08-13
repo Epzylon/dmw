@@ -1,5 +1,5 @@
 #!/bin/bash
-# Do my work script 
+# Do my work script
 
 #Please keep under 80 lines of width
 
@@ -41,7 +41,7 @@ elif [ -f $SLES ];
 then
     echo -n "SLES flavor loaded"
     cat $SLES
-    
+
     FLAVOR=SLES;
 else
     echo "Not valid OS found";
@@ -94,14 +94,14 @@ then
 fi
 if [[ -n $BIOS ]];
 then
-    echo "BIOS version: $BIOS" 
+    echo "BIOS version: $BIOS"
 fi
 echo "==============="
 }
 dmw_show_hw_info
 #Services init files
 if [ $FLAVOR == "RH" ];
-then 
+then
     NTP_INIT=ntpd;
 elif [ $FLAVOR == "SLES" ];
 then
@@ -404,9 +404,10 @@ vg_size=$(vg_free $3 "MB")
 if [[ $2 -le $vg_size ]];
 then
     task_message "Creating LV $1"
-    $LVCREATE -L $2"M" -n $1 $3 2>/dev/null
+    $LVCREATE -L $2"M" -n $1 $3 2>/dev/null 1>&2
     if [ $? == 0 ];
     then
+        $MKFS
         put_ok;
         return 0;
     else
@@ -489,7 +490,7 @@ elif [ $FLAVOR == "SLES" ];
 then
     echo "$NAME.$DOMAIN" > /etc/HOSTNAME
 fi
-$HOSTNAME $NAME && put_ok 
+$HOSTNAME $NAME && put_ok
 
 }
 function dmw_set_hosts ()
@@ -562,7 +563,7 @@ done
 #########################NTP CONFIG FILE########################################
 ################################################################################
 
-cat << EOF >> $NTP_FILE 
+cat << EOF >> $NTP_FILE
 tinker panic 0
 disable monitor
 
@@ -579,7 +580,7 @@ restrict -6 default kod nomodify notrap nopeer noquery
 # Permit all access over the loopback interface.  This could
 # be tightened as well, but to do so would effect some of
 # the administrative functions.
-restrict 127.0.0.1 
+restrict 127.0.0.1
 restrict -6 ::1
 
 # Hosts on local network are less restricted.
@@ -601,7 +602,7 @@ restrict -6 ::1
 includefile /etc/ntp/crypto/pw
 
 # Key file containing the keys and key identifiers used when operating
-# with symmetric key cryptography. 
+# with symmetric key cryptography.
 keys /etc/ntp/keys
 
 # Specify the key identifiers which are trusted.
@@ -628,17 +629,17 @@ function dmw_create_secuser ()
 #ToDo: Turn into generic user creation function
     #Create user
     task_message "Creating Sec User: $SECUSER"
-    
+
     #Verify if the group exists
     $GETENT group $SECUSER_GROUP 2>/dev/null 1>&2;
-    
+
     if [[ $? == 0 ]];
     then
         ADD_TO_GROUP="-g $SECUSER_GROUP"
     else
         ADD_TO_GROUP=""
     fi
-    
+
     if [[ $SECUSER_CREATE_IF_NO_GROUP == "yes" ]];
     then
         $USERADD -m -s $SECUSER_SHELL -c $SECUSER_GECOS \
@@ -646,7 +647,7 @@ function dmw_create_secuser ()
     else
         echo "$SECUSER_GROUP not found" && put_ok
     fi
-    
+
     #Set password
     task_message "Setting Sec User password: "
     echo $SECUSER":"$SECUSER_PASSWORD | $CHPASSWD && put_ok || put_fail
@@ -730,7 +731,7 @@ fi
 }
 
 function dmw_set_kdump ()
-{ 
+{
 #Set the crashkernel parameter on the grub config file
 task_message "Setting Kdump kernel parameter:"
 sed -ie 's/crashkernel=auto/crashkernel='$KDUMP_PARAM'/' $GRUB_FILE 2>/dev/null;
@@ -807,7 +808,7 @@ function dmw_set_kernel_parameter ()
 #$2 value
 
 parameter=$1
-value="$2 $3 $4 $5 $6" 
+value="$2 $3 $4 $5 $6"
 
 if [[ ! $# -eq 2 ]];
 then
@@ -820,6 +821,11 @@ then
     if [[ $? == 0 ]];
     then
         current_value=$(grep $parameter $SYSCTL_FILE|awk -F= '!/^#/ { print $2 }')
+        if [[ $current_value != $value ]];
+        then
+            echo -e "\tThe current value: $current_value is equal to $value"
+            return 0;
+        fi
         echo -e "\tReplacing $current_value for $value on $parameter"
         sed -ie "/$parameter/ s/$current_value/ $value/"  $SYSCTL_FILE
     else
@@ -863,7 +869,7 @@ fi
 function dmw_set_int ()
 {
 
-#####missing: Detect Bond interfaces!! 
+#####missing: Detect Bond interfaces!!
 # Use as follow:
 # configure_int interface ip netmask
 # sample:
@@ -880,7 +886,7 @@ then
     echo -e "\tIP:$2"
     echo -e "\tNETMASK:$3"
     echo -e "\tMAC:$MAC"
-        
+
     if [ -f $INT_FILE ];
     then
         rm -f $INT_FILE
@@ -892,7 +898,7 @@ then
     echo "DEVICE=$1" >> $INT_FILE
     echo "IPADDR=$2" >> $INT_FILE
     echo "NETMASK=$3" >> $INT_FILE
-   
+
     if [ $FLAVOR == "RH" ];
     then
         echo "ONBOOT=yes" >> $INT_FILE
@@ -907,7 +913,7 @@ then
     fi
 
     task_message "Testing config:"
-    
+
     $IFUP $1 2>/dev/null 1>&2 && put_ok || put_fail
     echo ""
 else
@@ -931,7 +937,7 @@ for interface in $(seq 1 ${#INTERFACE[@]});
     done
 if [[ $CONFIGURE_BONDS == "yes" ]];
 then
-    if [ -d $MODPROBE_PATH ];
+    if [[ -d $MODPROBE_PATH ]];
     then
         BOND_FILE=$MODPROBE_PATH$BONDING_FILE
     else
@@ -1000,17 +1006,17 @@ do
         CONFIGURE_BONDS="no"
     fi
 done
-if [ $CONFIGURE_BONDS -eq "yes" ];
+if [[ $CONFIGURE_BONDS -eq "yes" ]];
     then
         task_message "Setting slaves for bonds interfaces:"
         echo ""
     for bond in $(seq 1 ${#INTERFACE[@]});
     do
-        if [ ${INT_TYPE[$bond]} == "bond" ];
+        if [[ ${INT_TYPE[$bond]} == "bond" ]];
         then
             for slave in ${BOND_SLAVES[$bond]};
             do
-                #dmw_set_slave $slave ${INTERFACE[$bond]}
+                dmw_set_slave $slave ${INTERFACE[$bond]}
                 if [ $? == 0 ];
                 then
                     echo -en "\t$slave on bond$bond"; put_ok
@@ -1029,14 +1035,14 @@ function dmw_set_interfaces ()
 
 for int in $(seq 1 ${#INTERFACE[@]});
 do
-    if [ ${INT_TYPE[int]} == "eth" ];
+    if [[ ${INT_TYPE[int]} == "eth" ]];
     then
         dmw_set_int ${INTERFACE[int]} ${IP_INTERFACE[int]} ${NETMASK_INTERFACE[int]}
-    elif [ ${INT_TYPE[int]} == "bond" ];
+    elif [[ ${INT_TYPE[int]} == "bond" ]];
     then
         dmw_set_int ${INTERFACE[int]} ${IP_INTERFACE[int]} ${NETMASK_INTERFACE[int]} bond
     fi
-    
+
     echo "${IP_INTERFACE[int]}  $NAME${HOST_SUFIX[int]}.$DOMAIN $NAME${HOST_SUFIX[int]}">> $HOSTS_FILE
 done
 }
@@ -1101,7 +1107,7 @@ les=$($LVDISPLAY -c $1 | cut -d: -f8;)
 
 #Size of de vol on MB
 size_mb=$(( $size/1024/2 ));
-#LE size 
+#LE size
 le_size_kb=$($VGDISPLAY -c $ROOTVG| cut -d: -f13)
 le_size=$(( $le_size_kb / 1024 ))
 #Size reuqired in mb
@@ -1160,7 +1166,7 @@ else
         FSTYPE=$3;
     fi
     mount -t $3 $1 $2 2>/dev/null 1>&2
-    if [ $? == 0 ];
+    if [[ $? == 0 ]];
     then
         echo "$1    $2    $FSTYPE  defaults    1 3"  >> $FSTAB;
         echo -n "$2 mounted"; put_ok
@@ -1241,11 +1247,12 @@ function dmw_second_mps ()
 if [[ $MAKE_MP == "yes" ]];
 then
     task_message "Creating Mount Points"
+    echo -e "\n"
     for lv_id in $( seq 0 $(( ${#MP_DIR[@]} - 1 )) );
     do
         create_lv ${MP_LV[$lv_id]} ${MP_SIZE[$lv_id]} ${MP_VG[$lv_id]}
-        mkfs.$FSTYPE /dev/${MP_VG[$lv_id]}/${MP_LV[$lv_id]} 2>/dev/null 1>&2
-        dmw_make_mountpoint /dev/${MP_VG[$lv_id]}/${MP_LV[$lv_id]} ${MP_DIR[$lv_id]}
+        $MKFS -t $FSTYPE /dev/${MP_VG[$lv_id]}/${MP_LV[$lv_id]} 2>/dev/null 1>&2
+        dmw_make_mountpoint /dev/${MP_VG[$lv_id]}/${MP_LV[$lv_id]} ${MP_DIR[$lv_id]} $FSTYPE
     done
 
 fi
@@ -1263,14 +1270,14 @@ for vol in $(seq 0 $vol_index);
 do
     #Current  free LEs on the VG
     free_les=$(vg_free_pe $ROOTVG)
-    
+
     $LVDISPLAY /dev/$ROOTVG/${VOL_NAME[vol]} 2>/dev/null 1>&2
 	#IF LVEXIST
     if [ $? == 0 ];
     then
         #Current LEs on the LV
         current_les=$($LVDISPLAY -c /dev/$ROOTVG/${VOL_NAME[vol]} | cut -d: -f8)
-    
+
         #New amount of LEs
         new_les=$(dmw_vol_size /dev/$ROOTVG/${VOL_NAME[vol]} ${VOL_SIZE[vol]})
         #IF VOLSIZE
@@ -1362,12 +1369,13 @@ then
     (echo n; echo p; echo 1; echo ; echo $size; echo w) | fdisk $1 2>/dev/null 1>&2
     if [ $? == 0 ];
     then
+        partprobe 2>/dev/null 1>&2
         return 0
     else
         return 1
     fi
 else
-    return 1
+    return 2
 fi
 }
 function dmw_sync_altvg ()
@@ -1437,7 +1445,7 @@ dmw_create_secuser;
 dmw_set_localtime;
 dmw_set_hosts;
 dmw_set_ntp;
-dmw_set_dns;r
+dmw_set_dns;
 dmw_set_snmp;
 dmw_add_hosts_entries;
 dmw_enable_sarlogin;
@@ -1463,7 +1471,10 @@ dmw_set_bonds;
 dmw_set_interfaces;
 dmw_set_routes;
 dmw_disable_rootlogin;
+dmw_second_mps;
 dmw_sync_altvg;
+
+
 }
 
 function main {
