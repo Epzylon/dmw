@@ -24,8 +24,11 @@ if [ -f template ];
 then
     . template
 else
-    echo "No template found, exiting. Bye!"
-    exit 1
+    echo "-----------------"
+    echo "No template found"
+    echo "-----------------"
+    echo "MOST TASKS WILL FAIL!!!"
+    echo "EXCECUTE BY YOUR OUWN RISK"
 fi
 
 #Linux distribution
@@ -98,7 +101,9 @@ then
 fi
 echo "==============="
 }
+#Showing hw resume
 dmw_show_hw_info
+
 #Services init files
 if [ $FLAVOR == "RH" ];
 then
@@ -180,6 +185,7 @@ FSTAB=/etc/fstab
 ZONE_PATH=/usr/share/zoneinfo/
 INIT_PATH=/etc/init.d/
 MODPROBE_PATH=/etc/modprobe.d/
+
 if [ $FLAVOR == "RH" ];
 then
     INTERFACES_PATH=/etc/sysconfig/network-scripts/
@@ -206,7 +212,7 @@ function put_ok ()
 {
 tput cuf $(( $(tput cols) - 60 ));
 echo "[$GREEN Ok $WHITE]" | tee -a log
-tput cuf 1;
+tput cuf 0;
 #tput rc;
 log_output "-----> [Ok]"
 }
@@ -269,7 +275,7 @@ echo $@ >> $LOG_OUTPUT;
 # replaced by only one command or an alias. But using the functions
 # keeps the code cleanest
 
-################################## LVM #########################################
+################################## LVM ########################################
 
 # VG FREE PE:
 # Take a vg name and return free PEs
@@ -303,7 +309,7 @@ then
 	$VGDISPLAY $1 2>/dev/null 1>&2
 	if [[ $? == 0 ]];
 	then
-		PE_SIZE=$($VGDISPLAY -c $1 | cut -d: -f13)
+		PE_SIZE=$(( $($VGDISPLAY -c $1 | cut -d: -f13) / 1024 ))
 		echo $PE_SIZE;
 		return 0;
 	else
