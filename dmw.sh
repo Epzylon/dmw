@@ -306,7 +306,7 @@ function vg_pe_size ()
 # $1 vg name
 if [[ $# == 1 ]];
 then
-	$VGDISPLAY $1 2>/dev/null 1>&2
+    $VGDISPLAY $1 2>/dev/null 1>&2
 	if [[ $? == 0 ]];
 	then
 		PE_SIZE=$(( $($VGDISPLAY -c $1 | cut -d: -f13) / 1024 ))
@@ -337,7 +337,7 @@ then
 	FREE_PE=$(vg_free_pe $1)
 	PE_SIZE=$(vg_pe_size $1)
 	FREE_SIZE_MB=$(($FREE_PE*$PE_SIZE))
-	FREE_SIZE_GB=$(($FREE_SIZE_MB/1024/1024))
+	FREE_SIZE_GB=$(($FREE_SIZE_MB/1024))
 	if [[ $2 == "MB" ]];
 	then
 		echo $FREE_SIZE_MB;
@@ -413,7 +413,7 @@ then
     $LVCREATE -L $2"M" -n $1 $3 2>/dev/null 1>&2
     if [ $? == 0 ];
     then
-        $MKFS
+        $MKFS /dev/$3/$1 2>/dev/null 1>&2
         put_ok;
         return 0;
     else
