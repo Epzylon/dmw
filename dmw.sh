@@ -407,6 +407,7 @@ function create_lv ()
 # $2 size in MB
 # $3 vgname
 vg_size=$(vg_free $3 "MB")
+vg_pe=$(vg_pe_size $3)
 if [[ $2 -le $vg_size ]];
 then
     task_message "Creating LV $1"
@@ -421,19 +422,24 @@ then
         return 1;
     fi
 else
-    if [[ $(($vg_size - $LV_CREATION_ROUND)) -ge $2 ]];
+    round=$((LV_CREATION_ROUND*vg_pe))
+    new_size=$(($2-$round))
+    if [[ $vg_size -ge $new_size ]];
     then
-        task_message "Rounding size of $2"
-        $LVCREATE -L $(($2 - $LV_CREATION_ROUND))"M" -n $1 $3 2>/dev/null
-        if [ $? == 0 ];
+        task_message "Creating LV $1, size round: $new_size M instead of $2M"
+        $LVCREATE -n $1 -L $new_size"M" $3  2>/dev/null 1>&2
+        if [[ $? -eq 0 ]];
         then
             put_ok;
             return 0;
         else
-            task_message "No available space on $3"
             put_fail;
             return 1;
         fi
+    else
+        task_message "No available space on $3"
+        put_fail;
+        return 1;
     fi
 fi
 }
@@ -960,7 +966,7 @@ then
     fi
     done
 else
-    echo "Not needed!"; put_ok
+    echo -n "Not needed!"; put_ok
 fi
 }
 
