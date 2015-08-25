@@ -468,6 +468,16 @@ function check_hostname ()
             task_message "but the running hostname is wrong";
             put_warning;
         fi
+    else
+        if [[ $hostname_infile == "" ]];
+        then
+            task_message "Hostname was not configured yet";
+            put_fail;
+        else
+            echo ""
+            task_message "Hostname configured is different from the required"
+            put_fail;
+        fi
     fi
 }
 
