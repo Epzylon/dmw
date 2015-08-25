@@ -27,8 +27,11 @@ else
     echo "-----------------"
     echo "No template found"
     echo "-----------------"
+    echo "---------------------------"
     echo "MOST TASKS WILL FAIL!!!"
     echo "EXCECUTE BY YOUR OUWN RISK"
+    echo "---------------------------"
+    echo ""
 fi
 
 #Linux distribution
@@ -265,11 +268,11 @@ time_log >> $LOG_OUTPUT;
 echo $@ >> $LOG_OUTPUT;
 }
 
-################################################################################
-################################################################################
-############################# Internal functions ###############################
-################################################################################
-################################################################################
+###############################################################################
+###############################################################################
+############################# Internal functions  #############################
+###############################################################################
+###############################################################################
 
 # Most of these functions are very simple, and some of them could be
 # replaced by only one command or an alias. But using the functions
@@ -360,38 +363,35 @@ function lv_size ()
 {
 # $1 lv full path (like /dev/vg00/rootvol)
 # $2 [GB|LE] optionally you can choose GB or LE (MB by default)
-if [[ -f $1 ]];
+if [[ -b $1 ]];
 then
-	$LVDISPLAY $1 2>/dev/null 1>&2;
-	if [[ $? == 0 ]];
-	then
-		VG=$($LVDISPLAY -c $1| cut -d: -f2)
-		VG_PE_SIZE=$(vg_pe_size $VG)
-
-		LV_LES=$(($LVDISPLAY -c $1 | cut -d: -f8))
-		LV_SIZE_MB=$(($LV_LES*$VG_PE_SIZE))
-		LV_SIZE_GB=$(($LV_SIZE_MB/1024))
-
-		if [[ $2 == "GB" ]];
-		then
-			echo $LV_SIZE_GB;
-			return 0;
-		elif [[ $2 == "LE" ]];
-		then
-			echo $LV_LES;
-			return 0;
-		else
-			echo $LV_SIZE_MB;
-			return 0;
-		fi
-
-	else
-		echo "Bad LV path of non existent"
-		return 1;
-	fi
+    $LVDISPLAY $1 2>/dev/null 1>&2;
+    if [[ $? == 0 ]];
+    then
+        VG=$($LVDISPLAY -c $1| cut -d: -f2)
+        VG_PE_SIZE=$(vg_pe_size $VG)
+        LV_LES=$($LVDISPLAY -c $1 | cut -d: -f8)
+        LV_SIZE_MB=$(($LV_LES*$VG_PE_SIZE))
+        LV_SIZE_GB=$(($LV_SIZE_MB/1024))
+        if [[ $2 == "GB" ]];
+        then
+            echo $LV_SIZE_GB;
+            return 0;
+        elif [[ $2 == "LE" ]];
+        then
+            echo $LV_LES;
+            return 0;
+        else
+            echo $LV_SIZE_MB;
+            return 0;
+        fi
+    else
+        echo "Bad LV path of non existent"
+        return 1;
+        fi
 else
-	echo "LV didn't found!";
-	return 2;
+    echo "LV didn't found!";
+    return 2;
 fi
 }
 
@@ -995,12 +995,10 @@ then
 else
     return 1
 fi
-
 }
 
 function dmw_set_bonds ()
 {
-
 #Configure the properly slaves
 for int in $(seq 1 ${#INTERFACE[@]});
 do
