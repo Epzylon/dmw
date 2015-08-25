@@ -230,8 +230,8 @@ log_output "----->  [Fail]"
 }
 function put_warning ()
 {
-tput cut $(( $(tput cols) - 60 ));
-echo "{$ORANGE Ok $WHITE]"
+tput cuf $(( $(tput cols) - 60 ));
+echo "[$ORANGE Warning $WHITE]"
 tput cuf 1
 log_output "------> [Warning]"
 }
@@ -449,35 +449,40 @@ fi
 ##################################################################
 function check_hostname ()
 {
-task_message "Checking hostname:"
-hostname=$(hostname -f)
-hostname_infile=$(cat $NET_FILE | awk -F'=' ' $1 == "HOSTNAME" { print $2 }')
-echo -en "\nCurrent hostname: $hostname"
-if [ $hostname == "$HOSTNAME.$DOMAIN" ];
-then
-    put_ok
-else
-    put_fail
-fi
-echo -n "Hostname on file: $hostname_infile"
-if [ hostname_infile == "$HOSTNAME.$DOMAIN" ];
-then
-    put_ok
-else
-    put_fail
-fi
+    task_message "Checking hostname:"
+    hostname=$(hostname -f)
+    hostname_infile=$(cat $NET_FILE | awk -F'=' ' $1 == "HOSTNAME" {print $2}')
+    echo -e "\n\t\tCurrent hostname:\t\t$hostname"
+    echo -e "\t\tConfigured hostname:\t\t$hostname_infile"
+    echo -e "\t\tRequired hostname:\t\t$NAME"
+    if [[ $hostname_infile -eq $NAME ]];
+    then
+        echo ""
+        task_message "Hostname is configured as required"
+        echo ""
+        if [[ $NAME == $hostname ]];
+        then
+            task_message "also the running hostname:";
+            put_ok;
+        else
+            task_message "but the running hostname is wrong";
+            put_warning;
+        fi
+    fi
 }
+
+
 function check_cores ()
 {
-task_message "Checking Cores:"
-echo $CORES
-put_ok
+    task_message "Checking Cores:"
+    echo -n "$CORES"; put_ok
 }
 
 
 function check_all ()
 {
-check_cores
+    check_hostname
+    check_cores
 
 }
 ##################################################################
