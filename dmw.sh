@@ -68,7 +68,7 @@ function dmw_show_hw_info()
 ######## HARD INFO #########
 MOTHER_SERIAL=$(dmidecode -t 2 | awk ' $1 == "Serial" { print $3 }')
 VENDOR=$(dmidecode -t 0 | awk ' $1 == "Vendor:" { print $2 }')
-BIOS=$(dmidecode -t 0 | awk ' $1 == "BIOS" && $2 ==  "Revision:"  { print $3 }')
+BIOS=$(dmidecode -t 0 | awk ' $1 == "BIOS" && $2 ==  "Revision:"  {print $3}')
 FW_REV=$(dmidecode -t 0 | awk ' $1 == "Firmware" { print $3 }')
 PRODUCT=$(dmidecode -t 1 | awk -F':' ' $1 ~ "Product Name"  { print $2 }')
 CHASSIS_SERIAL=$(dmidecode -t 3 | awk ' $1 == "Serial" { print $3 }')
@@ -491,7 +491,7 @@ function check_cores ()
 function check_mem ()
 {
     task_message "Checking Memory (only showing):"
-    echo -n "$RAM_MB"; put_ok
+    echo -n "$RAM"; put_ok
 }
 
 function check_all ()
