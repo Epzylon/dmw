@@ -73,7 +73,7 @@ FW_REV=$(dmidecode -t 0 | awk ' $1 == "Firmware" { print $3 }')
 PRODUCT=$(dmidecode -t 1 | awk -F':' ' $1 ~ "Product Name"  { print $2 }')
 CHASSIS_SERIAL=$(dmidecode -t 3 | awk ' $1 == "Serial" { print $3 }')
 CORES=$(cat /proc/cpuinfo| grep processor | wc -l)
-RAM_MB=$(cat /proc/meminfo | awk '{ print $2 }' | head -n 1)
+RAM_MB=$(cat /proc/meminfo | awk '$1 == "MemTotal:"  { print $2 }')
 RAM=$(($RAM_MB/1000))
 
 echo "Hardware resume:"
@@ -454,7 +454,7 @@ function check_hostname ()
     hostname_infile=$(cat $NET_FILE | awk -F'=' ' $1 == "HOSTNAME" {print $2}')
     echo -e "\n\t\tCurrent hostname:\t\t$hostname"
     echo -e "\t\tConfigured hostname:\t\t$hostname_infile"
-    echo -e "\t\tRequired hostname:\t\t$NAME"
+    echo -e "\t\tRequired hostname:\t\t$NAME.$DOMAIN"
     if [[ $hostname_infile -eq $NAME ]];
     then
         echo ""
@@ -484,15 +484,21 @@ function check_hostname ()
 
 function check_cores ()
 {
-    task_message "Checking Cores:"
+    task_message "Checking Cores (only showing): "
     echo -n "$CORES"; put_ok
 }
 
+function check_mem ()
+{
+    task_message "Checking Memory (only showing):"
+    echo -n "$RAM_MB"; put_ok
+}
 
 function check_all ()
 {
     check_hostname
     check_cores
+    check_mem
 
 }
 ##################################################################
