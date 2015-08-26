@@ -737,6 +737,12 @@ SNMP_LINE=$COMMUNIT_STRING$SNMP_STRING
 #Set SNMP Community string
 #It works even on not gold disk image
 task_message "Setting SNMP:"
+if [[ -z SNMP_STRING ]];
+then
+    echo -n " no snmp string provided";
+    put_ok;
+    return 0;
+fi
 if [ -f $SNMP_FILE ];
 then
     eval "sed -ie '/com2sec/ c $SNMP_LINE'  $SNMP_FILE" 2>/dev/null;
