@@ -859,8 +859,9 @@ then
     grep $parameter $SYSCTL_FILE 2>/dev/null 1>&2
     if [[ $? == 0 ]];
     then
-        current_value=$(grep $parameter $SYSCTL_FILE|awk -F= '!/^#/ { print $2 }')
-        if [[ $current_value != $value ]];
+        current_value=$(grep $parameter $SYSCTL_FILE|
+            awk -F= '!/^#/ { print $2 }')
+        if [[ $current_value -eq $value ]];
         then
             echo -e "\tThe current value: $current_value is equal to $value"
             return 0;
