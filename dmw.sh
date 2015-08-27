@@ -18,6 +18,8 @@ declare -a ROUTE_COMMENT
 declare -a ROUTE_DESTINATION
 declare -a ROUTE_GW
 declare -a ROUTE_INT
+declare -a KERNEL_PARAM
+declare -a KERNEL_VALUE
 
 # Load template
 if [ -f template ];
@@ -517,8 +519,7 @@ if [ $FLAVOR == "RH" ];
 then
 echo "NETWORKING=yes
 NETWORKING_IPV6=no
-HOSTNAME="$NAME.$DOMAIN"
-"> $NET_FILE
+HOSTNAME="$NAME.$DOMAIN""> $NET_FILE
 elif [ $FLAVOR == "SLES" ];
 then
     echo "$NAME.$DOMAIN" > /etc/HOSTNAME
@@ -592,9 +593,9 @@ for server in $NTP_SERVERS;
 do
     echo "server $server $VERSION" >> $NTP_FILE;
 done
-################################################################################
-#########################NTP CONFIG FILE########################################
-################################################################################
+###############################################################################
+#########################NTP CONFIG FILE#######################################
+###############################################################################
 
 cat << EOF >> $NTP_FILE
 tinker panic 0
@@ -838,6 +839,22 @@ then
 else
     echo -n " There are no wwns";put_fail;
 fi
+fi
+}
+function dmw_set_kernel_parameters()
+{
+if [[ ${KERNEL_PARAM[@]} == 0 ]];
+then
+    task_message "No kernel parameters are required";
+    put_ok;
+    return 0
+else
+    task_message "Setting kernel parameters:";
+    echo "";
+    for param in $(seq 0 ${#KERNEL_PARAM[@]});
+    do
+        dmw_set_kernel_parameter ${KERNEL_PARAM[$param]} ${KERNEL_VALUE[param]}
+    done
 fi
 }
 
@@ -1098,9 +1115,11 @@ fi
 
 for route in $(seq 1 ${#ROUTE_DESTINATION[@]});
 do
-    if [[ -n ${ROUTE_INT[$route]} && -f "$INTERFACES_PATH/ifcfg-${ROUTE_INT[$route]}" ]];
+    if [[ -n ${ROUTE_INT[$route]} && -f \
+        "$INTERFACES_PATH/ifcfg-${ROUTE_INT[$route]}" ]];
     then
-        echo -e "\t${ROUTE_DESTINATION[$route]} via ${ROUTE_GW[$route]} >>  $NET_R_FILE/route-${ROUTE_INT[$route]}"
+        echo -e "\t${ROUTE_DESTINATION[$route]} via \
+        ${ROUTE_GW[$route]} >>  $NET_R_FILE/route-${ROUTE_INT[$route]}"
         if [[ -n ${ROUTE_COMMENT[$route]} ]];
         then
             echo "#${ROUTE_COMMENT[$route]}" >> $NET_R_FILE/route-${ROUTE_INT[$route]};
