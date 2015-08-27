@@ -1555,6 +1555,7 @@ function main {
     dmw_disable_selinux;
     dmw_set_bonding;
     dmw_set_bonds;
+    dmw_set_kernel_parameters;
     dmw_set_interfaces;
     dmw_set_routes;
     dmw_root_passwd;
