@@ -968,11 +968,7 @@ then
     then
         echo "HWADDR=$MAC" >> $INT_FILE
     fi
-
-    task_message "Testing config:"
-
-    $IFUP $1 2>/dev/null 1>&2 && put_ok || put_fail
-    echo ""
+    echo -e "\tInterface set, network restart required"
 else
     echo "$1 doesn't exists"
 fi
