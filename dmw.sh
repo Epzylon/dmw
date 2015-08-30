@@ -446,6 +446,20 @@ else
 fi
 }
 
+#### Other tools #####
+function clean_udev {
+task_message "Deleting udev file"
+if [[ -f $UDEV_RULES$UDEV_RULE_NET ]];
+then
+    rm -f $UDEV_RULES$UDEV_RULE_NET
+fi
+for file in $(ls $NET_R_FILE/ifcfg-eth*);
+do
+    sed -ie '/HWADDR/ d' $file
+    sed -ie '/UUID/ d' $file
+done
+put_ok
+}
 ##################################################################
 ########################## Check tasks ###########################
 ##################################################################
@@ -1476,20 +1490,7 @@ else
 fi
 }
 
-#### Other tools #####
-function clean_udev {
-task_message "Deleting udev file"
-if [[ -f $UDEV_RULES$UDEV_RULE_NET ]];
-then
-    rm -f $UDEV_RULES$UDEV_RULE_NET
-fi
-for file in $(ls $NET_R_FILE/ifcfg-eth*);
-do
-    sed -ie '/HWADDR/ d' $file
-    sed -ie '/UUID/ d' $file
-done
-put_ok
-}
+
 
 function pre_clone {
 task_message "Executing task before clonning:";
