@@ -1108,7 +1108,7 @@ do
         dmw_set_int ${INTERFACE[int]} ${IP_INTERFACE[int]} ${NETMASK_INTERFACE[int]} bond
     fi
 
-    echo "${IP_INTERFACE[int]}  $NAME${HOST_SUFIX[int]}.$DOMAIN $NAME${HOST_SUFIX[int]}">> $HOSTS_FILE
+    echo "${IP_INTERFACE[int]}  ${INT_NAME[int]} $(echo $INT_NAME|cut -d. -f1)">> $HOSTS_FILE
 done
 }
 
