@@ -449,9 +449,9 @@ fi
 #### Other tools #####
 function clean_udev {
 task_message "Deleting udev file"
-if [[ -f $UDEV_RULES$UDEV_RULE_NET ]];
+if [[ -f $UDEV_RULE_NET ]];
 then
-    rm -f $UDEV_RULES$UDEV_RULE_NET
+    rm -f $UDEV_RULE_NET
 fi
 for file in $(ls $NET_R_FILE/ifcfg-eth*);
 do
@@ -746,7 +746,8 @@ fi
 
 function dmw_set_snmp ()
 {
-
+if [[ -n $SNMP_STRING ]];
+then
 COMMUNIT_STRING="com2sec notConfigUser  default "
 SNMP_LINE=$COMMUNIT_STRING$SNMP_STRING
 #Set SNMP Community string
@@ -763,6 +764,7 @@ then
     eval "sed -ie '/com2sec/ c $SNMP_LINE'  $SNMP_FILE" 2>/dev/null;
     #Verify if the change was effective
     grep $SNMP_STRING $SNMP_FILE >/dev/null 2>&1 && put_ok || put_fail;
+fi
 fi
 }
 
