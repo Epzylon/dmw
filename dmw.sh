@@ -994,7 +994,7 @@ function dmw_set_bonding ()
 {
 # Set the bonding configuration not the bond interfaces
 task_message "Setting bonding module:"
-for interface in $(seq 1 ${#INTERFACE[@]});
+for interface in $(seq 0 ${#INTERFACE[@]});
     do
         if [[ ${BOND_SLAVES[$interface]} != "" ]];
         then
@@ -1013,7 +1013,7 @@ then
         BOND_FILE=$MODPROBE_FILE
     fi
     echo ""
-    for int in $(seq 1 ${#INTERFACE[@]});
+    for int in $(seq 0 ${#INTERFACE[@]});
     do
     if [[ ${INT_TYPE[$int]} == "bond" ]];
     then
@@ -1100,7 +1100,7 @@ function dmw_set_interfaces ()
 {
 #Configure all the interfaces
 
-for int in $(seq 1 ${#INTERFACE[@]});
+for int in $(seq 0 ${#INTERFACE[@]});
 do
     if [[ ${INT_TYPE[int]} == "eth" ]];
     then
@@ -1126,7 +1126,7 @@ if [[ ${#ROUTE_INT[@]} -eq 0 ]]; then
     return 1
 fi
 
-for route in $(seq 1 ${#ROUTE_DESTINATION[@]});
+for route in $(seq 0 ${#ROUTE_DESTINATION[@]});
 do
     if [[ -n ${ROUTE_INT[$route]} && -f \
         "$INTERFACES_PATH/ifcfg-${ROUTE_INT[$route]}" ]];
