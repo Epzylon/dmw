@@ -1063,7 +1063,7 @@ fi
 function dmw_set_bonds ()
 {
 #Configure the properly slaves
-for int in $(seq 1 ${#INTERFACE[@]});
+for int in $(seq 0 ${#INTERFACE[@]});
 do
     if [[ ${BOND_SLAVES[$int]} != "" ]];
     then
@@ -1077,7 +1077,7 @@ if [[ $CONFIGURE_BONDS -eq "yes" ]];
     then
         task_message "Setting slaves for bonds interfaces:"
         echo ""
-    for bond in $(seq 1 ${#INTERFACE[@]});
+    for bond in $(seq 0 ${#INTERFACE[@]});
     do
         if [[ ${INT_TYPE[$bond]} == "bond" ]];
         then
@@ -1110,7 +1110,8 @@ do
         dmw_set_int ${INTERFACE[int]} ${IP_INTERFACE[int]} ${NETMASK_INTERFACE[int]} bond
     fi
 
-    echo "${IP_INTERFACE[int]}  ${INT_NAME[int]} $(echo $INT_NAME|cut -d. -f1)">> $HOSTS_FILE
+    echo "${IP_INTERFACE[int]}  ${INT_NAME[int]} \
+    $(echo $INT_NAME[int]|cut -d. -f1)">> $HOSTS_FILE
 done
 }
 
@@ -1296,7 +1297,7 @@ then
     echo ""
     for vg_id in $( seq 0 $(( ${#VG_NAME[@]} - 1 )) );
     do
-        echo "Making "${VG_NAME[$vg_id]}":"
+        echo "\tMaking "${VG_NAME[$vg_id]}":"
         disk_list=""
         for disk in ${VG_PVS[$vg_id]};
         do
