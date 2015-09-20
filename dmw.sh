@@ -896,7 +896,7 @@ then
             awk -F= '!/^#/ { print $2 }')
         if [[ $current_value -eq $value ]];
         then
-            echo -e "\tThe current value: $current_value is equal to $value"
+            echo -e "\tThe current value on $parameter: $current_value is equal to $value"
             return 0;
         fi
         echo -e "\tReplacing $current_value for $value on $parameter"
@@ -1110,8 +1110,7 @@ do
         dmw_set_int ${INTERFACE[int]} ${IP_INTERFACE[int]} ${NETMASK_INTERFACE[int]} bond
     fi
 
-    echo "${IP_INTERFACE[int]}  ${INT_NAME[int]} \
-    $(echo $INT_NAME[int]|cut -d. -f1)">> $HOSTS_FILE
+    echo "${IP_INTERFACE[int]}  ${INT_NAME[int]}  $(echo $INT_NAME[int]|cut -d. -f1)">> $HOSTS_FILE
 done
 }
 
@@ -1297,7 +1296,7 @@ then
     echo ""
     for vg_id in $( seq 0 $(( ${#VG_NAME[@]} - 1 )) );
     do
-        echo "\tMaking "${VG_NAME[$vg_id]}":"
+        echo -e "\tMaking "${VG_NAME[$vg_id]}":"
         disk_list=""
         for disk in ${VG_PVS[$vg_id]};
         do
